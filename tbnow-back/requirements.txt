@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+python-multipart
+torch
+torchvision
+sentence-transformers
+faiss-cpu
+pypdf
+opencv-python
+numpy
+matplotlib
+dotenv
+google-genai
