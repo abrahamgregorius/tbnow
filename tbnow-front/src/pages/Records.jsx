@@ -1,68 +1,104 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import MobileNav from '../components/MobileNav';
 
 export default function Records() {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
+    const [records, setRecords] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [selectedRecord, setSelectedRecord] = useState(null);
+    const [chatMessage, setChatMessage] = useState('');
+    const [chatHistory, setChatHistory] = useState([]);
+    const [chatLoading, setChatLoading] = useState(false);
+    const navigate = useNavigate();
 
-    // Sample patient records data
-    const [records] = useState([
-        {
-            id: 1,
-            patientName: 'Ahmad S.',
-            patientId: 'TB-2025-001',
-            date: '2025-12-15',
-            type: 'Symptom Analysis',
-            status: 'completed',
-            result: 'High Risk - TB Suspected',
-            symptoms: ['Persistent cough', 'Weight loss', 'Night sweats'],
-            recommendation: 'Refer for sputum test and chest X-ray'
-        },
-        {
-            id: 2,
-            patientName: 'Siti R.',
-            patientId: 'TB-2025-002',
-            date: '2025-12-14',
-            type: 'X-ray Analysis',
-            status: 'follow-up',
-            result: 'Abnormal findings detected',
-            symptoms: ['Chest pain', 'Shortness of breath'],
-            recommendation: 'Schedule follow-up in 2 weeks'
-        },
-        {
-            id: 3,
-            patientName: 'Budi K.',
-            patientId: 'TB-2025-003',
-            date: '2025-12-13',
-            type: 'Symptom Analysis',
-            status: 'normal',
-            result: 'Low Risk - No TB indicators',
-            symptoms: ['Mild cough', 'Fatigue'],
-            recommendation: 'Monitor symptoms, return if worsen'
-        },
-        {
-            id: 4,
-            patientName: 'Maya L.',
-            patientId: 'TB-2025-004',
-            date: '2025-12-12',
-            type: 'Combined Analysis',
-            status: 'treatment',
-            result: 'TB Confirmed - Drug Sensitive',
-            symptoms: ['Chronic cough', 'Blood in sputum', 'Fever'],
-            recommendation: 'Start standard TB treatment regimen'
-        },
-        {
-            id: 5,
-            patientName: 'Rudi P.',
-            patientId: 'TB-2025-005',
-            date: '2025-12-11',
-            type: 'X-ray Analysis',
-            status: 'pending',
-            result: 'Analysis in progress',
-            symptoms: ['Cough > 2 weeks', 'Chest pain'],
-            recommendation: 'Awaiting AI analysis completion'
+    useEffect(() => {
+        fetchRecords();
+    }, []);
+
+    const fetchRecords = async () => {
+        try {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/records`);
+            if (response.ok) {
+                const data = await response.json();
+                setRecords(data.records);
+            }
+        } catch (error) {
+            console.error('Error fetching records:', error);
+        } finally {
+            setLoading(false);
         }
-    ]);
+    };
+
+    const openChat = (record) => {
+        setSelectedRecord(record);
+        setChatHistory(record.chatHistory || []);
+    };
+
+    const closeChat = () => {
+        setSelectedRecord(null);
+        setChatMessage('');
+        setChatHistory([]);
+    };
+
+    const sendChatMessage = async () => {
+        if (!chatMessage.trim() || !selectedRecord) return;
+
+        setChatLoading(true);
+        try {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/records/${selectedRecord.id}/chat`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    question: chatMessage,
+                    query_type: 'quick'
+                }),
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setChatHistory(prev => [...prev, data.chat]);
+                setChatMessage('');
+                
+                // Update the record in the list
+                setRecords(prev => prev.map(r => 
+                    r.id === selectedRecord.id ? data.record : r
+                ));
+                setSelectedRecord(data.record);
+            }
+        } catch (error) {
+            console.error('Error sending chat:', error);
+        } finally {
+            setChatLoading(false);
+        }
+    };
+
+    const updateRecordStatus = async (recordId, newStatus) => {
+        try {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/records/${recordId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    status: newStatus,
+                    notes: ''
+                }),
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setRecords(prev => prev.map(r => 
+                    r.id === recordId ? data.record : r
+                ));
+            }
+        } catch (error) {
+            console.error('Error updating record:', error);
+        }
+    };
 
     const getStatusColor = (status) => {
         switch (status) {
@@ -87,19 +123,18 @@ export default function Records() {
     };
 
     const filteredRecords = records.filter(record => {
-        const matchesSearch = record.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            record.patientId.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch = record.patientId.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesFilter = filterStatus === 'all' || record.status === filterStatus;
         return matchesSearch && matchesFilter;
     });
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white p-4 flex justify-center pb-20">
-            <div className="w-full max-w-sm">
+            <div className="w-full max-w-md">
                 {/* Header */}
                 <header className="bg-gradient-to-r from-purple-800 to-purple-900 text-white p-6 rounded-2xl shadow-2xl mb-6 text-center border border-purple-700">
-                    <h1 className="text-3xl font-bold mb-2 text-purple-300">Patient Records</h1>
-                    <p className="text-sm text-gray-300">View and manage patient screening history</p>
+                    <h1 className="text-3xl font-bold mb-2 text-purple-300">Rekam Medis Pasien</h1>
+                    <p className="text-sm text-gray-300">Lihat dan kelola riwayat screening pasien</p>
                 </header>
 
                 {/* Search and Filter */}
@@ -112,7 +147,7 @@ export default function Records() {
                             </svg>
                             <input
                                 type="text"
-                                placeholder="Search by name or ID..."
+                                placeholder="Cari berdasarkan ID pasien..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent text-gray-200 placeholder-gray-400"
@@ -121,10 +156,10 @@ export default function Records() {
 
                         {/* Filter */}
                         <div className="flex flex-wrap gap-2">
-                            {[
-                                { value: 'all', label: 'All' },
+                            {[  
+                                { value: 'all', label: 'Semua' },
                                 { value: 'pending', label: 'Pending' },
-                                { value: 'completed', label: 'Completed' },
+                                { value: 'completed', label: 'Selesai' },
                                 { value: 'follow-up', label: 'Follow-up' },
                                 { value: 'treatment', label: 'Treatment' }
                             ].map(filter => (
@@ -146,7 +181,12 @@ export default function Records() {
 
                 {/* Records List */}
                 <main className="space-y-4">
-                    {filteredRecords.length === 0 ? (
+                    {loading ? (
+                        <div className="bg-gray-800 p-6 rounded-2xl shadow-2xl border border-gray-700 text-center">
+                            <div className="animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                            <p className="text-gray-300">Loading records...</p>
+                        </div>
+                    ) : filteredRecords.length === 0 ? (
                         <div className="bg-gray-800 p-6 rounded-2xl shadow-2xl border border-gray-700 text-center">
                             <svg className="w-12 h-12 mx-auto mb-4 text-gray-500" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
@@ -160,73 +200,191 @@ export default function Records() {
                                 {/* Record Header */}
                                 <div className="flex justify-between items-start mb-3">
                                     <div>
-                                        <h3 className="text-lg font-semibold text-purple-300">{record.patientName}</h3>
-                                        <p className="text-sm text-gray-400">{record.patientId}</p>
+                                        <h3 className="text-lg font-semibold text-purple-300">
+                                            Pasien {record.patientId}
+                                        </h3>
+                                        <p className="text-sm text-gray-400">{record.date}</p>
                                     </div>
                                     <div className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(record.status)}`}>
                                         {getStatusIcon(record.status)} {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
                                     </div>
                                 </div>
 
-                                {/* Record Details */}
-                                <div className="space-y-2 mb-3">
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-gray-400">Date:</span>
-                                        <span className="text-gray-200">{record.date}</span>
-                                    </div>
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-gray-400">Type:</span>
-                                        <span className="text-gray-200">{record.type}</span>
-                                    </div>
-                                </div>
-
-                                {/* Result */}
-                                <div className="bg-gray-700 p-3 rounded-lg mb-3">
-                                    <p className="text-sm font-medium text-purple-300 mb-1">Result:</p>
-                                    <p className="text-sm text-gray-200">{record.result}</p>
-                                </div>
-
-                                {/* Symptoms */}
-                                {record.symptoms && record.symptoms.length > 0 && (
-                                    <div className="mb-3">
-                                        <p className="text-sm font-medium text-purple-300 mb-2">Symptoms:</p>
-                                        <div className="flex flex-wrap gap-1">
-                                            {record.symptoms.map((symptom, index) => (
-                                                <span key={index} className="px-2 py-1 bg-gray-700 text-xs text-gray-300 rounded-full">
-                                                    {symptom}
-                                                </span>
-                                            ))}
+                                {/* Patient Info Summary */}
+                                {record.patientInfo && (
+                                    <div className="mb-3 p-3 bg-gray-700 rounded-lg">
+                                        <p className="text-sm text-purple-300 mb-1">Info Pasien:</p>
+                                        <div className="text-xs text-gray-300 space-y-1">
+                                            {record.patientInfo.age && <p>Usia: {record.patientInfo.age}</p>}
+                                            {record.patientInfo.gender && <p>Jenis Kelamin: {record.patientInfo.gender}</p>}
+                                            {record.patientInfo.symptoms && <p>Gejala: {record.patientInfo.symptoms}</p>}
                                         </div>
                                     </div>
                                 )}
 
-                                {/* Recommendation */}
-                                <div className="bg-gray-700 p-3 rounded-lg mb-3">
-                                    <p className="text-sm font-medium text-purple-300 mb-1">Recommendation:</p>
-                                    <p className="text-sm text-gray-200">{record.recommendation}</p>
+                                {/* Diagnosis Result */}
+                                <div className="bg-blue-900 p-3 rounded-lg mb-3 border border-blue-600">
+                                    <p className="text-sm font-medium text-blue-300 mb-1">Hasil Diagnosis Klinis:</p>
+                                    <div 
+                                        className="text-sm text-blue-200"
+                                        dangerouslySetInnerHTML={{ 
+                                            __html: record.result ? record.result
+                                                .replace(/^## (.*$)/gm, '<h3 class="text-blue-100 text-2xl block mt-2">$1</h3>')
+                                                .replace(/^### (.*$)/gm, '<h4 class="text-blue-300 text-xl block mt-1">$1</h4>')
+                                                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                                                .replace(/\n/g, '<br>') : '' 
+                                        }}
+                                    />
                                 </div>
+
+                                {/* X-ray Result */}
+                                {record.xrayResult && (
+                                    <div className="bg-red-900 p-3 rounded-lg mb-3 border border-red-600">
+                                        <p className="text-sm font-medium text-red-300 mb-1">Hasil Analisis X-ray:</p>
+                                        <p className="text-sm text-red-200 mb-2">
+                                            Risiko: <span className="font-semibold">{record.xrayResult.risk_level}</span> 
+                                            ({(record.xrayResult.confidence * 100).toFixed(1)}% confidence)
+                                        </p>
+                                        {record.xrayResult.heatmap_url && (
+                                            <div className="mt-2">
+                                                <p className="text-xs text-red-300 mb-1">Heatmap Analisis:</p>
+                                                <img 
+                                                    src={`${import.meta.env.VITE_API_URL}${record.xrayResult.heatmap_url}`} 
+                                                    alt="X-ray Heatmap" 
+                                                    className="w-full max-w-xs rounded border border-red-600"
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Chat History Count */}
+                                {record.chatHistory && record.chatHistory.length > 0 && (
+                                    <div className="mb-3">
+                                        <p className="text-sm text-purple-300">
+                                            💬 {record.chatHistory.length} pesan chat
+                                        </p>
+                                    </div>
+                                )}
 
                                 {/* Actions */}
                                 <div className="flex gap-2">
-                                    <button className="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-2 px-3 rounded-lg text-sm font-medium transition-colors">
-                                        View Details
+                                    <button 
+                                        onClick={() => openChat(record)}
+                                        className="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-2 px-3 rounded-lg text-sm font-medium transition-colors"
+                                    >
+                                        💬 Chat
                                     </button>
-                                    <button className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 px-3 rounded-lg text-sm font-medium transition-colors">
-                                        Update
-                                    </button>
+                                    <select
+                                        value={record.status}
+                                        onChange={(e) => updateRecordStatus(record.id, e.target.value)}
+                                        className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 px-3 rounded-lg text-sm font-medium transition-colors"
+                                    >
+                                        <option value="normal">Normal</option>
+                                        <option value="follow-up">Follow-up</option>
+                                        <option value="completed">Completed</option>
+                                        <option value="treatment">Treatment</option>
+                                        <option value="pending">Pending</option>
+                                    </select>
                                 </div>
                             </div>
                         ))
                     )}
                 </main>
 
+                {/* Chat Modal */}
+                {selectedRecord && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                        <div className="bg-gray-800 rounded-2xl shadow-2xl border border-gray-700 w-full max-w-md max-h-[80vh] flex flex-col">
+                            {/* Chat Header */}
+                            <div className="p-4 border-b border-gray-700 flex justify-between items-center">
+                                <div>
+                                    <h3 className="text-lg font-semibold text-purple-300">
+                                        Chat - {selectedRecord.patientId}
+                                    </h3>
+                                    <p className="text-sm text-gray-400">
+                                        {selectedRecord.patientInfo?.age && `${selectedRecord.patientInfo.age} tahun`}
+                                        {selectedRecord.patientInfo?.gender && `, ${selectedRecord.patientInfo.gender}`}
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={closeChat}
+                                    className="text-gray-400 hover:text-white p-1"
+                                >
+                                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                                    </svg>
+                                </button>
+                            </div>
+
+                            {/* Chat History */}
+                            <div className="flex-1 overflow-y-auto p-4 space-y-3 max-h-96">
+                                {chatHistory.length === 0 ? (
+                                    <div className="text-center text-gray-400 py-8">
+                                        <p>Belum ada pesan chat.</p>
+                                        <p className="text-sm mt-2">Mulai percakapan tentang pasien ini.</p>
+                                    </div>
+                                ) : (
+                                    chatHistory.map((chat, index) => (
+                                        <div key={chat.id || index} className="space-y-2">
+                                            {/* User Question */}
+                                            <div className="flex justify-end">
+                                                <div className="bg-purple-600 text-white p-3 rounded-lg max-w-[80%]">
+                                                    <p className="text-sm">{chat.question}</p>
+                                                </div>
+                                            </div>
+                                            {/* AI Response */}
+                                            <div className="flex justify-start">
+                                                <div className="bg-gray-700 text-gray-200 p-3 rounded-lg max-w-[80%]">
+                                                    <div 
+                                                        className="text-sm"
+                                                        dangerouslySetInnerHTML={{ 
+                                                            __html: chat.response ? chat.response.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>') : '' 
+                                                        }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+
+                            {/* Chat Input */}
+                            <div className="p-4 border-t border-gray-700">
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={chatMessage}
+                                        onChange={(e) => setChatMessage(e.target.value)}
+                                        onKeyPress={(e) => e.key === 'Enter' && sendChatMessage()}
+                                        placeholder="Tanyakan tentang pasien ini..."
+                                        className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                                        disabled={chatLoading}
+                                    />
+                                    <button
+                                        onClick={sendChatMessage}
+                                        disabled={chatLoading || !chatMessage.trim()}
+                                        className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-colors disabled:cursor-not-allowed"
+                                    >
+                                        {chatLoading ? (
+                                            <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full"></div>
+                                        ) : (
+                                            'Kirim'
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Summary Stats */}
                 <div className="mt-6 bg-gray-800 p-4 rounded-2xl shadow-2xl border border-gray-700">
-                    <h3 className="text-lg font-semibold text-purple-300 mb-3 text-center">Summary</h3>
+                    <h3 className="text-lg font-semibold text-purple-300 mb-3 text-center">Ringkasan</h3>
                     <div className="grid grid-cols-2 gap-4 text-center">
                         <div className="bg-green-900 p-3 rounded-lg border border-green-600">
                             <span className="text-2xl font-bold text-green-300 block">{records.filter(r => r.status === 'completed').length}</span>
-                            <span className="text-sm text-green-400">Completed</span>
+                            <span className="text-sm text-green-400">Selesai</span>
                         </div>
                         <div className="bg-yellow-900 p-3 rounded-lg border border-yellow-600">
                             <span className="text-2xl font-bold text-yellow-300 block">{records.filter(r => r.status === 'follow-up').length}</span>

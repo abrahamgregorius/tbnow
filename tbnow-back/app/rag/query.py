@@ -16,28 +16,49 @@ client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 # Load embedding model
 MODEL = SentenceTransformer("all-MiniLM-L6-v2")
 
-# # Load FAISS index & chunks
-# index = faiss.read_index("data/faiss.index")
-# with open("data/chunks.pkl", "rb") as f:
-#     chunks = pickle.load(f)
+# Global variables for FAISS and chunks
+index = None
+chunks = None
 
+def load_rag_data():
+    global index, chunks
+    if index is None and os.path.exists("data/faiss.index"):
+        index = faiss.read_index("data/faiss.index")
+    if chunks is None and os.path.exists("data/chunks.pkl"):
+        with open("data/chunks.pkl", "rb") as f:
+            chunks = pickle.load(f)
 
-def rag_answer(question: str):
+# Load data on import
+load_rag_data()
+
+def rag_answer(question: str, query_type: str = "quick"):
     # Check if data files exist
     if not os.path.exists("data/faiss.index") or not os.path.exists("data/chunks.pkl"):
         return {
-            "answer": "Data not ingested yet. Please run the ingestion script after adding PDF files to data/guidelines/.",
+            "answer": "Data belum diingest. Silakan jalankan script ingestion setelah menambahkan file PDF ke folder data/guidelines/.",
             "sources": [],
-            "disclaimer": "Not a medical diagnosis"
+            "disclaimer": "Bukan diagnosis medis"
         }
 
-    # Load FAISS index & chunks
-    index = faiss.read_index("data/faiss.index")
-    with open("data/chunks.pkl", "rb") as f:
-        chunks = pickle.load(f)
+    # Ensure data is loaded
+    if index is None or chunks is None:
+        load_rag_data()
+
+    # Format question based on type
+    if query_type == "diagnosis":
+        formatted_question = f"""
+PERMINTAAN BANTUAN DIAGNOSIS PASIEN:
+
+{question}
+
+Berikan dukungan pengambilan keputusan klinis untuk screening TB berdasarkan informasi pasien di atas.
+Sertakan penilaian risiko, tes diagnostik yang direkomendasikan, dan pertimbangan klinis.
+"""
+    else:  # quick guidance
+        formatted_question = f"Pertanyaan bimbingan klinis cepat: {question}"
 
     # Embed user question
-    q_embed = MODEL.encode([question])
+    q_embed = MODEL.encode([formatted_question])
     _, I = index.search(q_embed, 5)
 
     # Build context
@@ -53,12 +74,12 @@ Context:
 {context}
 
 Question:
-{question}
+{formatted_question}
 """
     )
 
     return {
         "answer": response.text,
-        "sources": ["WHO TB Guideline / Kemenkes SOP"],
-        "disclaimer": "Not a medical diagnosis"
+        "sources": ["Pedoman TB WHO / SOP Kemenkes"],
+        "disclaimer": "Bukan diagnosis medis"
     }

@@ -5,8 +5,26 @@ export default function Landing() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
+            {/* Fixed Navbar */}
+            <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur-md border-b border-gray-700 shadow-lg">
+                <div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+                    <div className="flex items-center space-x-3">
+                        <svg className="w-8 h-8 text-blue-400" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M19 3H5c-1.1 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 11h-4v4h-4v-4H6v-4h4V6h4v4h4v4z"/>
+                        </svg>
+                        <h1 className="text-xl font-bold text-blue-400">TBNow</h1>
+                    </div>
+                    <button
+                        onClick={() => navigate('/home')}
+                        className="bg-gradient-to-r from-green-500 to-blue-500 text-white py-2 px-4 rounded-full hover:from-green-600 hover:to-blue-600 transition-all duration-300 text-sm font-semibold shadow-lg transform hover:scale-105"
+                    >
+                        Enter App
+                    </button>
+                </div>
+            </nav>
+
             {/* Hero Section */}
-            <section className="flex items-center justify-center h-80 p-4 relative overflow-hidden">
+            <section className="flex items-center justify-center p-4 relative mt-12 py-10">
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-900/20 to-green-900/20 animate-pulse"></div>
                 <div className="text-center max-w-md mx-auto relative z-10">
                     <div className="mb-4">

@@ -5,22 +5,77 @@ import MobileNav from '../components/MobileNav';
 export default function Analyze() {
     const [xrayFile, setXrayFile] = useState(null);
     const [analysisResult, setAnalysisResult] = useState('');
+    const [xrayData, setXrayData] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [patientInfo, setPatientInfo] = useState({
+        age: '',
+        gender: '',
+        symptoms: '',
+        duration: '',
+        contactHistory: '',
+        comorbidities: '',
+        vitalSigns: '',
+        physicalExam: ''
+    });
+    const [showPatientForm, setShowPatientForm] = useState(false);
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!xrayFile) return;
+        
         setIsLoading(true);
-        // Simulate API call
-        setTimeout(() => {
-            setAnalysisResult('X-ray analysis: Suspicious lesions detected. Probability of TB: 75%. Consult specialist.');
+        const formData = new FormData();
+        formData.append('file', xrayFile);
+        
+        try {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/xray/analyze`, {
+                method: 'POST',
+                body: formData,
+            });
+            const result = await response.json();
+            setXrayData(result);
+            
+            let analysisText = `Risiko TB: ${result.risk_level}\n`;
+            analysisText += `Tingkat Kepercayaan: ${(result.confidence * 100).toFixed(1)}%\n`;
+            analysisText += `Catatan: ${result.note}`;
+            
+            if (result.heatmap_url) {
+                analysisText += `\nHeatmap: ${result.heatmap_url}`;
+            }
+            
+            setAnalysisResult(analysisText);
+        } catch (error) {
+            setAnalysisResult('Error analyzing image. Please try again.');
+        } finally {
             setIsLoading(false);
-        }, 2000);
+        }
+    };
+
+    const handleSaveToRecords = async () => {
+        try {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/records`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    patientInfo: patientInfo,
+                    assessment: `Analisis X-ray: ${analysisResult}`,
+                    xrayResult: xrayData,
+                }),
+            });
+            const data = await response.json();
+            alert('Hasil analisis berhasil disimpan ke rekam medis');
+            navigate('/records');
+        } catch (error) {
+            alert('Gagal menyimpan ke rekam medis');
+        }
     };
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white p-4 flex justify-center pb-20">
-            <div className="w-full max-w-sm">
+            <div className="w-full max-w-md">
                 {/* Header */}
                 <header className="bg-gradient-to-r from-green-800 to-green-900 text-white p-6 rounded-2xl shadow-2xl mb-6 text-center border border-green-700">
                     <h1 className="text-3xl font-bold mb-2 text-green-300">X-ray Analysis</h1>
@@ -80,7 +135,23 @@ export default function Analyze() {
                         </form>
                         {analysisResult && (
                             <div className="mt-4 p-4 bg-red-900 border border-red-600 rounded-xl shadow-lg">
-                                <p className="text-red-200 font-medium">{analysisResult}</p>
+                                <p className="text-red-200 font-medium whitespace-pre-line mb-3">{analysisResult}</p>
+                                {xrayData && xrayData.heatmap_url && (
+                                    <div className="mt-3">
+                                        <p className="text-sm text-red-300 mb-2">Heatmap Analisis:</p>
+                                        <img 
+                                            src={`${import.meta.env.VITE_API_URL}${xrayData.heatmap_url}`} 
+                                            alt="X-ray Heatmap" 
+                                            className="w-full max-w-sm rounded border border-red-600 mx-auto block"
+                                        />
+                                    </div>
+                                )}
+                                <button
+                                    onClick={handleSaveToRecords}
+                                    className="mt-4 w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300"
+                                >
+                                    Simpan ke Rekam Medis
+                                </button>
                             </div>
                         )}
                     </section>

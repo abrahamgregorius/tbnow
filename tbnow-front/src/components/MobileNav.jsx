@@ -5,7 +5,7 @@ export default function MobileNav() {
     const location = useLocation();
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-700 p-2 flex justify-around max-w-sm mx-auto rounded-t-2xl shadow-2xl">
+        <nav className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-700 p-2 flex justify-around max-w-md mx-auto rounded-t-2xl shadow-2xl">
             <button
                 onClick={() => navigate('/home')}
                 className={`flex flex-col items-center p-2 rounded-lg transition-colors duration-200 ${
