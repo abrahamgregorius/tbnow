@@ -1,7 +1,27 @@
 # backend/app/main.py
 import os
+# Set environment variables BEFORE any other imports
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Suppress TF warnings
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # More aggressive TF suppression
+os.environ['TF_CPP_MIN_VLOG_LEVEL'] = '3'
+
+# Suppress all warnings immediately
+import warnings
+warnings.filterwarnings('ignore')
+warnings.filterwarnings('ignore', category=UserWarning)
+warnings.filterwarnings('ignore', category=DeprecationWarning)
+warnings.filterwarnings('ignore', category=FutureWarning)
+warnings.filterwarnings('ignore', category=RuntimeWarning)
+
+# Suppress TensorFlow/Keras warnings specifically
+warnings.filterwarnings('ignore', module='tensorflow')
+warnings.filterwarnings('ignore', module='tf_keras')
+warnings.filterwarnings('ignore', module='keras')
+
+# Set TensorFlow logging to ERROR only
+import logging
+logging.getLogger('tensorflow').setLevel(logging.ERROR)
+logging.getLogger('tf_keras').setLevel(logging.ERROR)
 
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware

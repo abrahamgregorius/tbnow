@@ -113,10 +113,22 @@ Berikan penilaian risiko TB dan rekomendasi diagnosis.
             }
 
             const data = await response.json();
-            setReasoningResult(data.answer);
             
-            // Save to records
-            await savePatientRecord(data.answer);
+            // Check if this is an error response from our backend
+            if (data.answer && data.answer.includes('⚠️ **Layanan AI sementara tidak tersedia**')) {
+                setReasoningResult(data.answer);
+            } else if (data.answer && data.answer.includes('⚠️ **Batas permintaan tercapai**')) {
+                setReasoningResult(data.answer);
+            } else if (data.answer && data.answer.includes('⚠️ **Kesalahan sistem**')) {
+                setReasoningResult(data.answer);
+            } else {
+                setReasoningResult(data.answer);
+                
+                // Save to records only for successful diagnosis
+                if (activeTab === 'diagnosis') {
+                    await savePatientRecord(data.answer);
+                }
+            }
             
         } catch (error) {
             console.error('Diagnosis error:', error);

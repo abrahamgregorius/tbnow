@@ -3,6 +3,12 @@ from PIL import Image
 import torchvision.transforms as T
 from .model import load_tb_model
 from .gradcam import generate_cam
+import warnings
+
+# Suppress warnings
+warnings.filterwarnings('ignore', category=UserWarning)
+warnings.filterwarnings('ignore', category=DeprecationWarning)
+warnings.filterwarnings('ignore', category=RuntimeWarning)
 
 model = load_tb_model()
 

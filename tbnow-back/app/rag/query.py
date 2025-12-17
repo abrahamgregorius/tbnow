@@ -1,6 +1,7 @@
 import faiss
 import pickle
 import os
+import time
 
 from sentence_transformers import SentenceTransformer
 from google import genai
@@ -27,6 +28,34 @@ def load_rag_data():
     if chunks is None and os.path.exists("data/chunks.pkl"):
         with open("data/chunks.pkl", "rb") as f:
             chunks = pickle.load(f)
+
+def call_gemini_with_retry(contents: str, max_retries: int = 2, retry_delay: float = 3.0):
+    """
+    Call Gemini API with retry logic for temporary failures
+    """
+    for attempt in range(max_retries + 1):
+        try:
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=contents
+            )
+            return response
+        except Exception as e:
+            error_message = str(e)
+            
+            # Don't retry for permanent errors
+            if "400" in error_message or "401" in error_message or "403" in error_message:
+                raise e
+            
+            # Retry for temporary errors
+            if attempt < max_retries and ("503" in error_message or "UNAVAILABLE" in error_message or "overloaded" in error_message.lower()):
+                print(f"Gemini API temporarily unavailable (attempt {attempt + 1}/{max_retries + 1}), retrying in {retry_delay}s...")
+                time.sleep(retry_delay)
+                retry_delay *= 1.5  # Exponential backoff
+                continue
+            
+            # If we've exhausted retries or it's not a retryable error
+            raise e
 
 # Load data on import
 load_rag_data()
@@ -65,9 +94,8 @@ Sertakan penilaian risiko, tes diagnostik yang direkomendasikan, dan pertimbanga
     context = "\n".join([chunks[i] for i in I[0]])
 
     # Call Gemini
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=f"""
+    try:
+        response = call_gemini_with_retry(f"""
 {SYSTEM_PROMPT}
 
 Context:
@@ -75,8 +103,32 @@ Context:
 
 Question:
 {formatted_question}
-"""
-    )
+""")
+        return {
+            "answer": response.text,
+            "sources": ["Pedoman TB WHO / SOP Kemenkes"],
+            "disclaimer": "Bukan diagnosis medis"
+        }
+    except Exception as e:
+        error_message = str(e)
+        if "503" in error_message or "UNAVAILABLE" in error_message or "overloaded" in error_message.lower():
+            return {
+                "answer": "⚠️ **Layanan AI sementara tidak tersedia**\n\nModel AI sedang mengalami beban tinggi. Silakan coba lagi dalam beberapa menit.\n\n**Saran sementara:**\n- Gunakan pengetahuan klinis Anda untuk penilaian awal\n- Periksa gejala pasien secara menyeluruh\n- Lakukan pemeriksaan fisik dan tes dasar\n- Konsultasikan dengan spesialis jika diperlukan",
+                "sources": ["Fallback Response"],
+                "disclaimer": "Bukan diagnosis medis - layanan AI tidak tersedia"
+            }
+        elif "429" in error_message or "rate limit" in error_message.lower():
+            return {
+                "answer": "⚠️ **Batas permintaan tercapai**\n\nTerlalu banyak permintaan dalam waktu singkat. Silakan tunggu sebentar sebelum mencoba lagi.\n\n**Informasi alternatif:**\n- Tinjau pedoman TB WHO secara manual\n- Gunakan alat diagnostik standar\n- Konsultasikan dengan tim medis",
+                "sources": ["Rate Limited"],
+                "disclaimer": "Bukan diagnosis medis - batas permintaan tercapai"
+            }
+        else:
+            return {
+                "answer": f"⚠️ **Kesalahan sistem**\n\nTerjadi kesalahan saat memproses permintaan Anda: {error_message[:100]}...\n\nSilakan coba lagi atau hubungi administrator sistem.",
+                "sources": ["Error Response"],
+                "disclaimer": "Bukan diagnosis medis - kesalahan sistem"
+            }
 
 def record_rag_answer(question: str, record_data: dict, query_type: str = "quick"):
     """
@@ -139,9 +191,8 @@ PEDOMAN KLINIS REFERENSI:
 """
 
     # Call Gemini with record-specific context
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=f"""
+    try:
+        response = call_gemini_with_retry(f"""
 {SYSTEM_PROMPT}
 
 Konteks Pasien Spesifik:
@@ -152,14 +203,32 @@ Pertanyaan:
 
 Instruksi: Berikan jawaban yang sangat spesifik untuk pasien ini berdasarkan data rekam medis mereka.
 Jangan berikan nasihat umum - fokus pada situasi klinis pasien ini.
-"""
-    )
-
-    return {
-        "answer": response.text,
-        "sources": ["Data Rekam Medis Pasien", "Pedoman TB WHO / SOP Kemenkes"],
-        "disclaimer": "Bukan diagnosis medis - konsultasikan dengan spesialis"
-    }
+""")
+        return {
+            "answer": response.text,
+            "sources": ["Data Rekam Medis Pasien", "Pedoman TB WHO / SOP Kemenkes"],
+            "disclaimer": "Bukan diagnosis medis - konsultasikan dengan spesialis"
+        }
+    except Exception as e:
+        error_message = str(e)
+        if "503" in error_message or "UNAVAILABLE" in error_message or "overloaded" in error_message.lower():
+            return {
+                "answer": "⚠️ **Layanan AI sementara tidak tersedia**\n\nModel AI sedang mengalami beban tinggi. Silakan coba lagi dalam beberapa menit.\n\n**Saran alternatif untuk pasien ini:**\n- Tinjau data rekam medis secara manual\n- Gunakan pengetahuan klinis Anda untuk penilaian\n- Lakukan pemeriksaan fisik menyeluruh\n- Pertimbangkan konsultasi dengan spesialis TB",
+                "sources": ["Fallback Response"],
+                "disclaimer": "Bukan diagnosis medis - layanan AI tidak tersedia"
+            }
+        elif "429" in error_message or "rate limit" in error_message.lower():
+            return {
+                "answer": "⚠️ **Batas permintaan tercapai**\n\nTerlalu banyak permintaan dalam waktu singkat. Silakan tunggu sebentar sebelum mencoba lagi.\n\n**Informasi pasien tersedia:**\n- Data rekam medis lengkap dapat dilihat di atas\n- Riwayat konsultasi tersimpan dalam record\n- Hasil X-ray tersedia untuk review manual",
+                "sources": ["Rate Limited"],
+                "disclaimer": "Bukan diagnosis medis - batas permintaan tercapai"
+            }
+        else:
+            return {
+                "answer": f"⚠️ **Kesalahan sistem**\n\nTerjadi kesalahan saat memproses konsultasi pasien ini: {error_message[:100]}...\n\n**Data pasien masih tersedia untuk review manual:**\n- Riwayat lengkap dapat dilihat di record\n- Hasil pemeriksaan tersimpan\n- Chat history tersedia",
+                "sources": ["Error Response"],
+                "disclaimer": "Bukan diagnosis medis - kesalahan sistem"
+            }
 
 
 def build_record_context(record_data: dict) -> str:

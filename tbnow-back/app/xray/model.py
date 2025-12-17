@@ -4,6 +4,11 @@ import torch.nn as nn
 import torchvision.transforms as transforms
 from PIL import Image
 import os
+import warnings
+
+# Suppress warnings
+warnings.filterwarnings('ignore', category=UserWarning)
+warnings.filterwarnings('ignore', category=DeprecationWarning)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

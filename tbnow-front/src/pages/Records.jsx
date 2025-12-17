@@ -66,14 +66,33 @@ export default function Records() {
 
             if (response.ok) {
                 const data = await response.json();
-                setChatHistory(prev => [...prev, data.chat]);
-                setChatMessage('');
                 
-                // Update the record in the list
-                setRecords(prev => prev.map(r => 
-                    r.id === selectedRecord.id ? data.record : r
-                ));
-                setSelectedRecord(data.record);
+                // Check if this is an error response from our backend
+                if (data.chat && data.chat.response && (
+                    data.chat.response.includes('⚠️ **Layanan AI sementara tidak tersedia**') ||
+                    data.chat.response.includes('⚠️ **Batas permintaan tercapai**') ||
+                    data.chat.response.includes('⚠️ **Kesalahan sistem**')
+                )) {
+                    // Still add the error response to chat history for transparency
+                    setChatHistory(prev => [...prev, data.chat]);
+                    setChatMessage('');
+                    
+                    // Update the record in the list
+                    setRecords(prev => prev.map(r => 
+                        r.id === selectedRecord.id ? data.record : r
+                    ));
+                    setSelectedRecord(data.record);
+                } else {
+                    // Normal successful response
+                    setChatHistory(prev => [...prev, data.chat]);
+                    setChatMessage('');
+                    
+                    // Update the record in the list
+                    setRecords(prev => prev.map(r => 
+                        r.id === selectedRecord.id ? data.record : r
+                    ));
+                    setSelectedRecord(data.record);
+                }
             } else {
                 console.error('Failed to send chat - status:', response.status);
                 alert('Gagal mengirim pesan. Silakan coba lagi.');
@@ -352,6 +371,9 @@ export default function Records() {
                                         {selectedRecord.patientInfo?.age && `${selectedRecord.patientInfo.age} tahun`}
                                         {selectedRecord.patientInfo?.gender && `, ${selectedRecord.patientInfo.gender}`}
                                     </p>
+                                    <p className="text-xs text-purple-400 mt-1">
+                                        💡 AI Chat yang dipersonalisasi berdasarkan data rekam medis pasien ini
+                                    </p>
                                 </div>
                                 <button
                                     onClick={closeChat}
@@ -403,7 +425,7 @@ export default function Records() {
                                         value={chatMessage}
                                         onChange={(e) => setChatMessage(e.target.value)}
                                         onKeyPress={(e) => e.key === 'Enter' && sendChatMessage()}
-                                        placeholder="Tanyakan tentang pasien ini..."
+                                        placeholder="Tanyakan tentang kondisi pasien ini berdasarkan rekam medis..."
                                         className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
                                         disabled={chatLoading}
                                     />
