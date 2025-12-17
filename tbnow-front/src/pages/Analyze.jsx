@@ -29,10 +29,16 @@ export default function Analyze() {
         formData.append('file', xrayFile);
         
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/xray/analyze`, {
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+            const response = await fetch(`${apiUrl}/xray/analyze`, {
                 method: 'POST',
                 body: formData,
             });
+            
+            if (!response.ok) {
+                throw new Error(`Analysis failed with status: ${response.status}`);
+            }
+            
             const result = await response.json();
             setXrayData(result);
             
@@ -42,7 +48,8 @@ export default function Analyze() {
             
             setAnalysisResult(analysisText);
         } catch (error) {
-            setAnalysisResult('Error analyzing image. Please try again.');
+            console.error('X-ray analysis error:', error);
+            setAnalysisResult('Error analyzing image. Please check your internet connection and try again.');
         } finally {
             setIsLoading(false);
         }
@@ -50,7 +57,8 @@ export default function Analyze() {
 
     const handleSaveToRecords = async () => {
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/records`, {
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+            const response = await fetch(`${apiUrl}/records`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -61,11 +69,17 @@ export default function Analyze() {
                     xrayResult: xrayData,
                 }),
             });
+            
+            if (!response.ok) {
+                throw new Error(`Save failed with status: ${response.status}`);
+            }
+            
             const data = await response.json();
             alert('Hasil analisis berhasil disimpan ke rekam medis');
             navigate('/records');
         } catch (error) {
-            alert('Gagal menyimpan ke rekam medis');
+            console.error('Save to records error:', error);
+            alert('Gagal menyimpan ke rekam medis. Silakan coba lagi.');
         }
     };
 
@@ -139,7 +153,7 @@ export default function Analyze() {
                                     <div className="mt-3">
                                         <p className="text-sm text-red-300 mb-2">Heatmap Analisis:</p>
                                         <img 
-                                            src={`${import.meta.env.VITE_API_URL}${xrayData.heatmap_url}`} 
+                                            src={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${xrayData.heatmap_url}`} 
                                             alt="X-ray Heatmap" 
                                             className="w-full max-w-sm rounded border border-red-600 mx-auto block"
                                         />

@@ -11,6 +11,7 @@ export default function Records() {
     const [chatMessage, setChatMessage] = useState('');
     const [chatHistory, setChatHistory] = useState([]);
     const [chatLoading, setChatLoading] = useState(false);
+    const [deleteConfirm, setDeleteConfirm] = useState(null);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -19,13 +20,17 @@ export default function Records() {
 
     const fetchRecords = async () => {
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/records`);
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+            const response = await fetch(`${apiUrl}/records`);
             if (response.ok) {
                 const data = await response.json();
                 setRecords(data.records);
+            } else {
+                console.error('Failed to fetch records - status:', response.status);
             }
         } catch (error) {
             console.error('Error fetching records:', error);
+            // Could show a user-friendly message here
         } finally {
             setLoading(false);
         }
@@ -47,7 +52,8 @@ export default function Records() {
 
         setChatLoading(true);
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/records/${selectedRecord.id}/chat`, {
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+            const response = await fetch(`${apiUrl}/records/${selectedRecord.id}/chat`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -68,9 +74,13 @@ export default function Records() {
                     r.id === selectedRecord.id ? data.record : r
                 ));
                 setSelectedRecord(data.record);
+            } else {
+                console.error('Failed to send chat - status:', response.status);
+                alert('Gagal mengirim pesan. Silakan coba lagi.');
             }
         } catch (error) {
             console.error('Error sending chat:', error);
+            alert('Terjadi kesalahan saat mengirim pesan.');
         } finally {
             setChatLoading(false);
         }
@@ -78,7 +88,8 @@ export default function Records() {
 
     const updateRecordStatus = async (recordId, newStatus) => {
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/records/${recordId}`, {
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+            const response = await fetch(`${apiUrl}/records/${recordId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -94,9 +105,33 @@ export default function Records() {
                 setRecords(prev => prev.map(r => 
                     r.id === recordId ? data.record : r
                 ));
+            } else {
+                console.error('Failed to update record - status:', response.status);
             }
         } catch (error) {
             console.error('Error updating record:', error);
+        }
+    };
+
+    const deleteRecord = async (recordId) => {
+        try {
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+            const response = await fetch(`${apiUrl}/records/${recordId}`, {
+                method: 'DELETE',
+            });
+
+            if (response.ok) {
+                setRecords(prev => prev.filter(r => r.id !== recordId));
+                setDeleteConfirm(null);
+                if (selectedRecord && selectedRecord.id === recordId) {
+                    closeChat();
+                }
+            } else {
+                alert('Gagal menghapus record. Silakan coba lagi.');
+            }
+        } catch (error) {
+            console.error('Error deleting record:', error);
+            alert('Terjadi kesalahan saat menghapus record.');
         }
     };
 
@@ -123,7 +158,8 @@ export default function Records() {
     };
 
     const filteredRecords = records.filter(record => {
-        const matchesSearch = record.patientId.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch = record.patientId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            (record.patientInfo?.name && record.patientInfo.name.toLowerCase().includes(searchTerm.toLowerCase()));
         const matchesFilter = filterStatus === 'all' || record.status === filterStatus;
         return matchesSearch && matchesFilter;
     });
@@ -147,7 +183,7 @@ export default function Records() {
                             </svg>
                             <input
                                 type="text"
-                                placeholder="Cari berdasarkan ID pasien..."
+                                placeholder="Cari berdasarkan nama atau ID pasien..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent text-gray-200 placeholder-gray-400"
@@ -201,7 +237,7 @@ export default function Records() {
                                 <div className="flex justify-between items-start mb-3">
                                     <div>
                                         <h3 className="text-lg font-semibold text-purple-300">
-                                            Pasien {record.patientId}
+                                            {record.patientInfo?.name ? record.patientInfo.name : `Pasien ${record.patientId}`}
                                         </h3>
                                         <p className="text-sm text-gray-400">{record.date}</p>
                                     </div>
@@ -215,6 +251,7 @@ export default function Records() {
                                     <div className="mb-3 p-3 bg-gray-700 rounded-lg">
                                         <p className="text-sm text-purple-300 mb-1">Info Pasien:</p>
                                         <div className="text-xs text-gray-300 space-y-1">
+                                            {record.patientInfo.name && <p>Nama: {record.patientInfo.name}</p>}
                                             {record.patientInfo.age && <p>Usia: {record.patientInfo.age}</p>}
                                             {record.patientInfo.gender && <p>Jenis Kelamin: {record.patientInfo.gender}</p>}
                                             {record.patientInfo.symptoms && <p>Gejala: {record.patientInfo.symptoms}</p>}
@@ -249,7 +286,7 @@ export default function Records() {
                                             <div className="mt-2">
                                                 <p className="text-xs text-red-300 mb-1">Heatmap Analisis:</p>
                                                 <img 
-                                                    src={`${import.meta.env.VITE_API_URL}${record.xrayResult.heatmap_url}`} 
+                                                    src={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${record.xrayResult.heatmap_url}`} 
                                                     alt="X-ray Heatmap" 
                                                     className="w-full max-w-xs rounded border border-red-600"
                                                 />
@@ -286,6 +323,15 @@ export default function Records() {
                                         <option value="treatment">Treatment</option>
                                         <option value="pending">Pending</option>
                                     </select>
+                                    <button 
+                                        onClick={() => setDeleteConfirm(record)}
+                                        className="bg-red-600 hover:bg-red-700 text-white py-2 px-3 rounded-lg text-sm font-medium transition-colors"
+                                        title="Hapus Record"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        </svg>
+                                    </button>
                                 </div>
                             </div>
                         ))
@@ -300,7 +346,7 @@ export default function Records() {
                             <div className="p-4 border-b border-gray-700 flex justify-between items-center">
                                 <div>
                                     <h3 className="text-lg font-semibold text-purple-300">
-                                        Chat - {selectedRecord.patientId}
+                                        Chat - {selectedRecord.patientInfo?.name || selectedRecord.patientId}
                                     </h3>
                                     <p className="text-sm text-gray-400">
                                         {selectedRecord.patientInfo?.age && `${selectedRecord.patientInfo.age} tahun`}
@@ -372,6 +418,43 @@ export default function Records() {
                                             'Kirim'
                                         )}
                                     </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Delete Confirmation Modal */}
+                {deleteConfirm && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                        <div className="bg-gray-800 rounded-2xl shadow-2xl border border-gray-700 w-full max-w-sm">
+                            <div className="p-6">
+                                <div className="text-center">
+                                    <div className="w-16 h-16 bg-red-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <svg className="w-8 h-8 text-red-300" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                                        </svg>
+                                    </div>
+                                    <h3 className="text-xl font-semibold text-red-300 mb-2">Hapus Record</h3>
+                                    <p className="text-gray-300 mb-6">
+                                        Apakah Anda yakin ingin menghapus record pasien <strong>{deleteConfirm.patientInfo?.name || deleteConfirm.patientId}</strong>?
+                                        <br />
+                                        <span className="text-sm text-gray-400">Tindakan ini tidak dapat dibatalkan.</span>
+                                    </p>
+                                    <div className="flex gap-3">
+                                        <button
+                                            onClick={() => setDeleteConfirm(null)}
+                                            className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg font-medium transition-colors"
+                                        >
+                                            Batal
+                                        </button>
+                                        <button
+                                            onClick={() => deleteRecord(deleteConfirm.id)}
+                                            className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg font-medium transition-colors"
+                                        >
+                                            Hapus
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>

@@ -46,6 +46,7 @@ class QueryRequest(BaseModel):
     query_type: str = "quick"
 
 class PatientInfo(BaseModel):
+    name: str = ""
     age: str = ""
     gender: str = ""
     symptoms: str = ""
@@ -171,3 +172,15 @@ async def update_record(record_id: str, update: RecordUpdate):
     save_records(records)
     
     return {"record": record, "message": "Record updated successfully"}
+
+@app.delete("/records/{record_id}")
+async def delete_record(record_id: str):
+    records = load_records()
+    record = next((r for r in records if r["id"] == record_id), None)
+    if not record:
+        raise HTTPException(status_code=404, detail="Record not found")
+    
+    records = [r for r in records if r["id"] != record_id]
+    save_records(records)
+    
+    return {"message": "Record deleted successfully"}
