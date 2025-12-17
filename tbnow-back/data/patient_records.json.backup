@@ -1,0 +1,97 @@
+[
+  {
+    "id": "54e36db9-6615-4eb5-96c7-7b8955601353",
+    "patientId": "TB-2025-001",
+    "date": "2025-12-17",
+    "type": "Patient Diagnosis",
+    "status": "completed",
+    "result": "Analisis X-ray: Risiko TB: Medium\nTingkat Kepercayaan: 62.0%",
+    "patientInfo": {
+      "name": "",
+      "age": "",
+      "gender": "",
+      "symptoms": "",
+      "duration": "",
+      "contactHistory": "",
+      "comorbidities": "",
+      "vitalSigns": "",
+      "physicalExam": ""
+    },
+    "xrayResult": {
+      "risk_level": "Medium",
+      "confidence": 0.62,
+      "observations": "Terdapat indikasi abnormalitas pada struktur paru-paru yang memerlukan evaluasi lebih lanjut. Heatmap menunjukkan area dengan aktivitas sedang yang perlu diperhatikan.",
+      "recommendations": "Lakukan pemeriksaan klinis menyeluruh dan pertimbangkan pemeriksaan penunjang tambahan seperti tes sputum atau rontgen berulang dalam 2-4 minggu.",
+      "follow_up_questions": [
+        "Apakah pasien memiliki gejala pernapasan?",
+        "Apakah ada faktor risiko TB seperti HIV atau diabetes?",
+        "Berapa lama gejala sudah dirasakan?",
+        "Apakah pasien perokok atau memiliki riwayat TB sebelumnya?"
+      ],
+      "heatmap_url": "/static/heatmaps/c2c237e4-03f3-4ed8-9579-cb6c59807f72.png",
+      "note": "Hasil ini bukan diagnosis definitif dan harus dikonfirmasi oleh tenaga kesehatan profesional"
+    },
+    "chatHistory": [],
+    "createdAt": "2025-12-17T20:10:57.392609",
+    "updatedAt": "2025-12-17T20:10:57.392609"
+  },
+  {
+    "id": "fc301d66-5e15-4c70-b60c-baa99e2a7816",
+    "patientId": "TB-2025-002",
+    "date": "2025-12-17",
+    "type": "Patient Diagnosis",
+    "status": "follow-up",
+    "result": "Tentu, saya akan membantu Anda menganalisis informasi pasien Heru untuk mendukung pengambilan keputusan klinis terkait skrining Tuberkulosis (TB).\n\n**Penilaian Risiko TB**\n\nBerdasarkan informasi yang diberikan, pasien Heru memiliki beberapa faktor yang meningkatkan kemungkinan TB, meskipun tidak ada riwayat kontak yang diketahui:\n\n*   **Gejala Khas TB:** Batuk yang sudah berlangsung selama 1 minggu, meskipun durasinya relatif singkat, merupakan salah satu gejala utama TB.\n*   **Gejala Sistemik:** Lemas dan demam (suhu 39°C) adalah gejala sistemik umum yang sering menyertai infeksi TB.\n*   **Faktor Risiko Lainnya:** Pasien berusia 49 tahun dan memiliki komorbiditas hipertensi. Meskipun hipertensi bukan faktor risiko langsung untuk TB, kondisi komorbiditas secara umum dapat mempengaruhi respons tubuh terhadap infeksi.\n\nUntuk penilaian risiko yang lebih kuantitatif, pedoman skrining dapat digunakan. Namun, berdasarkan gejala dan tanda vital, status pasien ini dapat dikategorikan sebagai **terduga TB** yang memerlukan investigasi lebih lanjut.\n\n**Rekomendasi Diagnosis**\n\nBerdasarkan pedoman penegakan diagnosis TB, terutama untuk orang dewasa, prinsip utamanya adalah **pemeriksaan bakteriologis harus ditegakkan terlebih dahulu**.\n\n1.  **Tes Diagnostik yang Direkomendasikan:**\n\n    *   **Pemeriksaan Mikroskopis Dahak (Pulasan BTA):** Ini adalah langkah awal yang krusial untuk mendeteksi keberadaan *Mycobacterium tuberculosis*. Direkomendasikan untuk mengambil setidaknya dua sampel dahak.\n        *   *Konteks:* \"Diagnosis TB Paru pada orang dewasa harus ditegakkan terlebih dahulu dengan pemeriksaan bakteriologis. Pemeriksaan bakteriologis yang dimaksud adalah pemeriksaan mikroskopis, tes cepat molekuler TB dan biakan.\" (Halaman 22)\n    *   **Tes Cepat Molekuler (TCM) TB (GeneXpert MTB/RIF):** Jika fasilitas tersedia, TCM TB sangat direkomendasikan untuk penegakan diagnosis TB karena kecepatan dan sensitivitasnya, terutama dalam mendeteksi resistansi Rifampisin.\n        *   *Konteks:* \"Pemeriksaan TCM digunakan untuk penegakan diagnosis TB, sedangkan pemantauan kemajuan pengobatan tetap dilakukan dengan pemeriksaan mikroskopis.\" (Halaman 22)\n        *   *Konteks:* \"Fasyankes yang mempunyai akses pemeriksaan TCM, penegakan diagnosis TB pada terduga TB dilakukan dengan pemeriksaan TCM.\" (Halaman 22)\n        *   *Konteks:* \"Jumlah contoh uji dahak yang diperlukan untuk pemeriksaan TCM sebanyak 2 (dua) dengan kualitas yang bagus.\" (Halaman 22)\n    *   **Foto Toraks (Rontgen Dada):** Foto toraks dapat memberikan gambaran kelainan pada paru yang sugestif TB, namun **tidak dibenarkan untuk mendiagnosis TB hanya berdasarkan foto toraks saja**. Foto toraks harus digunakan sebagai pemeriksaan penunjang setelah atau bersamaan dengan pemeriksaan bakteriologis.\n        *   *Konteks:* \"Tidak dibenarkan mendiagnosis TB hanya berdasarkan pemeriksaan foto toraks saja. Foto toraks tidak selalu memberikan gambaran yang spesifik pada TB paru, sehingga dapat menyebabkan terjadi over diagnosis ataupun under diagnosis.\" (Halaman 22)\n\n2.  **Pertimbangan Klinis:**\n\n    *   **Riwayat Kontak Negatif:** Meskipun tidak ada riwayat kontak yang diketahui, TB tetap dapat ditularkan dari individu yang tidak menyadari status TB mereka atau dari paparan di lingkungan non-rumah.\n    *   **Demam Tinggi (39°C):** Demam yang signifikan ini memerlukan perhatian segera dan investigasi lebih lanjut untuk menyingkirkan infeksi serius.\n    *   **Lemas:** Gejala umum ini perlu dievaluasi lebih lanjut, yang bisa terkait dengan infeksi sistemik seperti TB.\n\n**Langkah Selanjutnya**\n\n1.  **Kumpulkan Sampel Dahak:** Ambil dua sampel dahak dari pasien Heru untuk pemeriksaan mikroskopis (BTA) dan TCM TB (jika tersedia). Pastikan sampel berkualitas baik.\n2.  **Lakukan Foto Toraks:** Jadwalkan pemeriksaan foto toraks untuk mengevaluasi parenkim paru.\n3.  **Evaluasi Hasil:** Interpretasikan hasil gabungan dari pemeriksaan bakteriologis dan pencitraan untuk membuat diagnosis akhir.\n4.  **Skrining Komorbiditas Lain:** Lanjutkan pemantauan dan manajemen hipertensi pasien.\n\n**Penting untuk diingat:**\n\n*   Diagnosis TB memerlukan konfirmasi bakteriologis.\n*   AI tidak dapat memberikan diagnosis definitif; keputusan akhir harus dibuat oleh tenaga kesehatan profesional berdasarkan seluruh gambaran klinis pasien.\n\n**Penafian (Disclaimer):**\nSaya adalah sistem pendukung keputusan klinis berbasis AI. Informasi yang diberikan didasarkan pada pedoman yang tersedia dan bertujuan untuk membantu tenaga kesehatan dalam skrining dan diagnosis TB. Saya tidak menggantikan penilaian klinis, keahlian, atau pengalaman tenaga kesehatan profesional. Keputusan diagnostik dan pengobatan harus selalu dibuat oleh tenaga kesehatan yang berkualifikasi setelah evaluasi pasien secara menyeluruh.\n\nSemoga informasi ini membantu dalam pengelolaan pasien Anda.",
+    "patientInfo": {
+      "name": "Heru",
+      "age": "49",
+      "gender": "Laki-laki",
+      "symptoms": "Batuk, lemas",
+      "duration": "1 minggu",
+      "contactHistory": "Tidak",
+      "comorbidities": "Hipertensi",
+      "vitalSigns": "39C, 140/89",
+      "physicalExam": "Tidak ada"
+    },
+    "xrayResult": null,
+    "chatHistory": [],
+    "createdAt": "2025-12-17T21:31:18.523590",
+    "updatedAt": "2025-12-17T21:31:18.523590"
+  },
+  {
+    "id": "dcc58660-cda7-43f6-81d8-88734d56660f",
+    "patientId": "TB-2025-003",
+    "date": "2025-12-17",
+    "type": "Patient Diagnosis",
+    "status": "normal",
+    "result": "Analisis X-ray: Risiko TB: Low\nTingkat Kepercayaan: 31.0%",
+    "patientInfo": {
+      "name": "",
+      "age": "",
+      "gender": "",
+      "symptoms": "",
+      "duration": "",
+      "contactHistory": "",
+      "comorbidities": "",
+      "vitalSigns": "",
+      "physicalExam": ""
+    },
+    "xrayResult": {
+      "risk_level": "Low",
+      "confidence": 0.31,
+      "observations": "Struktur paru-paru tampak normal tanpa indikasi signifikan kelainan TB. Heatmap menunjukkan aktivitas rendah pada area paru-paru.",
+      "recommendations": "Lanjutkan pemantauan rutin kesehatan. Jika muncul gejala baru, segera konsultasikan dengan tenaga kesehatan.",
+      "follow_up_questions": [
+        "Apakah ada gejala batuk atau sesak napas?",
+        "Apakah ada riwayat kontak dengan pasien TB?",
+        "Apakah ada faktor risiko seperti malnutrisi atau immunosupresi?",
+        "Kapan pemeriksaan kesehatan terakhir dilakukan?"
+      ],
+      "heatmap_url": "/static/heatmaps/0b658dd9-e1cb-4107-a760-2ca9c147ba0d.png",
+      "note": "Hasil ini bukan diagnosis definitif dan harus dikonfirmasi oleh tenaga kesehatan profesional"
+    },
+    "chatHistory": [],
+    "createdAt": "2025-12-17T21:31:57.185283",
+    "updatedAt": "2025-12-17T21:31:57.185283"
+  }
+]

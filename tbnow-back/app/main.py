@@ -34,24 +34,55 @@ import json
 import os
 from datetime import datetime
 import uuid
+import sqlite3
+from contextlib import contextmanager
 from app.xray.inference import quick_screen
 
 app = FastAPI(title="TBNow API")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Records storage
-RECORDS_FILE = "data/patient_records.json"
+# Database setup
+DATABASE_PATH = "data/tbnow.db"
 
-def load_records():
-    if os.path.exists(RECORDS_FILE):
-        with open(RECORDS_FILE, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    return []
+@contextmanager
+def get_db():
+    """Context manager for database connections"""
+    conn = sqlite3.connect(DATABASE_PATH)
+    conn.row_factory = sqlite3.Row  # Enable column access by name
+    try:
+        yield conn
+    finally:
+        conn.close()
 
-def save_records(records):
-    os.makedirs("data", exist_ok=True)
-    with open(RECORDS_FILE, 'w', encoding='utf-8') as f:
-        json.dump(records, f, ensure_ascii=False, indent=2)
+def init_database():
+    """Initialize database tables"""
+    with get_db() as conn:
+        # Create patient_records table
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS patient_records (
+                id TEXT PRIMARY KEY,
+                patient_id TEXT UNIQUE,
+                date TEXT,
+                type TEXT,
+                status TEXT,
+                result TEXT,
+                patient_info TEXT,  -- JSON string
+                xray_result TEXT,   -- JSON string
+                chat_history TEXT,  -- JSON string
+                created_at TEXT,
+                updated_at TEXT
+            )
+        ''')
+        
+        # Create indexes for better performance
+        conn.execute('CREATE INDEX IF NOT EXISTS idx_patient_id ON patient_records(patient_id)')
+        conn.execute('CREATE INDEX IF NOT EXISTS idx_status ON patient_records(status)')
+        conn.execute('CREATE INDEX IF NOT EXISTS idx_date ON patient_records(date)')
+        
+        conn.commit()
+
+# Initialize database on startup
+init_database()
 
 app.add_middleware(
     CORSMiddleware,
@@ -100,15 +131,29 @@ async def analyze_xray(file: UploadFile = File(...)):
 # Records endpoints
 @app.get("/records")
 async def get_records():
-    records = load_records()
-    return {"records": records}
+    with get_db() as conn:
+        cursor = conn.execute('''
+            SELECT * FROM patient_records 
+            ORDER BY created_at DESC
+        ''')
+        records = []
+        for row in cursor.fetchall():
+            record = dict(row)
+            # Parse JSON fields
+            record['patientInfo'] = json.loads(record['patient_info']) if record['patient_info'] else {}
+            record['xrayResult'] = json.loads(record['xray_result']) if record['xray_result'] else None
+            record['chatHistory'] = json.loads(record['chat_history']) if record['chat_history'] else []
+            # Remove old field names
+            del record['patient_info']
+            del record['xray_result'] 
+            del record['chat_history']
+            records.append(record)
+        return {"records": records}
 
 @app.post("/records")
 async def create_record(request: DiagnosisRequest):
-    records = load_records()
-    
     # Generate patient ID
-    patient_id = f"TB-{datetime.now().year}-{str(len(records) + 1).zfill(3)}"
+    patient_id = f"TB-{datetime.now().year}-{str(len(get_records()['records']) + 1).zfill(3)}"
     
     # Determine status based on assessment
     assessment_lower = request.assessment.lower()
@@ -135,25 +180,52 @@ async def create_record(request: DiagnosisRequest):
         "updatedAt": datetime.now().isoformat()
     }
     
-    records.append(record)
-    save_records(records)
+    # Insert into database
+    with get_db() as conn:
+        conn.execute('''
+            INSERT INTO patient_records 
+            (id, patient_id, date, type, status, result, patient_info, xray_result, chat_history, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            record['id'],
+            record['patientId'],
+            record['date'],
+            record['type'],
+            record['status'],
+            record['result'],
+            json.dumps(record['patientInfo']),
+            json.dumps(record['xrayResult']) if record['xrayResult'] else None,
+            json.dumps(record['chatHistory']),
+            record['createdAt'],
+            record['updatedAt']
+        ))
+        conn.commit()
     
     return {"record": record, "message": "Record created successfully"}
 
 @app.get("/records/{record_id}")
 async def get_record(record_id: str):
-    records = load_records()
-    record = next((r for r in records if r["id"] == record_id), None)
-    if not record:
-        raise HTTPException(status_code=404, detail="Record not found")
-    return record
+    with get_db() as conn:
+        cursor = conn.execute('SELECT * FROM patient_records WHERE id = ?', (record_id,))
+        row = cursor.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Record not found")
+        
+        record = dict(row)
+        # Parse JSON fields
+        record['patientInfo'] = json.loads(record['patient_info']) if record['patient_info'] else {}
+        record['xrayResult'] = json.loads(record['xray_result']) if record['xray_result'] else None
+        record['chatHistory'] = json.loads(record['chat_history']) if record['chat_history'] else []
+        # Remove old field names
+        del record['patient_info']
+        del record['xray_result'] 
+        del record['chat_history']
+        return record
 
 @app.post("/records/{record_id}/chat")
 async def add_chat_to_record(record_id: str, request: QueryRequest):
-    records = load_records()
-    record = next((r for r in records if r["id"] == record_id), None)
-    if not record:
-        raise HTTPException(status_code=404, detail="Record not found")
+    # Get current record
+    record = await get_record(record_id)
     
     # Get AI response using record-specific RAG
     from .rag.query import record_rag_answer
@@ -168,40 +240,58 @@ async def add_chat_to_record(record_id: str, request: QueryRequest):
         "queryType": request.query_type
     }
     
-    if "chatHistory" not in record:
-        record["chatHistory"] = []
+    chat_history = record.get("chatHistory", [])
+    chat_history.append(chat_entry)
     
-    record["chatHistory"].append(chat_entry)
-    record["updatedAt"] = datetime.now().isoformat()
+    # Update record in database
+    with get_db() as conn:
+        conn.execute('''
+            UPDATE patient_records 
+            SET chat_history = ?, updated_at = ?
+            WHERE id = ?
+        ''', (
+            json.dumps(chat_history),
+            datetime.now().isoformat(),
+            record_id
+        ))
+        conn.commit()
     
-    save_records(records)
+    # Return updated record
+    updated_record = await get_record(record_id)
     
-    return {"chat": chat_entry, "record": record}
+    return {"chat": chat_entry, "record": updated_record}
 
 @app.put("/records/{record_id}")
 async def update_record(record_id: str, update: RecordUpdate):
-    records = load_records()
-    record = next((r for r in records if r["id"] == record_id), None)
-    if not record:
-        raise HTTPException(status_code=404, detail="Record not found")
+    # Check if record exists
+    await get_record(record_id)
     
-    record["status"] = update.status
-    if update.notes:
-        record["notes"] = update.notes
-    record["updatedAt"] = datetime.now().isoformat()
+    # Update record in database
+    with get_db() as conn:
+        conn.execute('''
+            UPDATE patient_records 
+            SET status = ?, updated_at = ?
+            WHERE id = ?
+        ''', (
+            update.status,
+            datetime.now().isoformat(),
+            record_id
+        ))
+        conn.commit()
     
-    save_records(records)
+    # Return updated record
+    updated_record = await get_record(record_id)
     
-    return {"record": record, "message": "Record updated successfully"}
+    return {"record": updated_record, "message": "Record updated successfully"}
 
 @app.delete("/records/{record_id}")
 async def delete_record(record_id: str):
-    records = load_records()
-    record = next((r for r in records if r["id"] == record_id), None)
-    if not record:
-        raise HTTPException(status_code=404, detail="Record not found")
+    # Check if record exists
+    await get_record(record_id)
     
-    records = [r for r in records if r["id"] != record_id]
-    save_records(records)
+    # Delete record from database
+    with get_db() as conn:
+        conn.execute('DELETE FROM patient_records WHERE id = ?', (record_id,))
+        conn.commit()
     
     return {"message": "Record deleted successfully"}

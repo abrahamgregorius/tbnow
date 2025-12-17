@@ -18,7 +18,20 @@ model.fc = nn.Linear(model.fc.in_features, 2)  # TB vs Normal
 
 # Load weights (adjust path if needed)
 model_path = os.path.join(os.path.dirname(__file__), "model_tb.pth")
-model.load_state_dict(torch.load(model_path, map_location=device))
+try:
+    checkpoint = torch.load(model_path, map_location=device)
+    if isinstance(checkpoint, dict) and 'model_state_dict' in checkpoint:
+        # New checkpoint format with metadata
+        model.load_state_dict(checkpoint['model_state_dict'])
+        print(f"Loaded model checkpoint from epoch {checkpoint.get('epoch', 'unknown')}")
+    else:
+        # Legacy format (direct state_dict)
+        model.load_state_dict(checkpoint)
+        print("Loaded legacy model format")
+except Exception as e:
+    print(f"Error loading model: {e}")
+    print("Using untrained model - predictions may be inaccurate!")
+
 model = model.to(device)
 model.eval()
 

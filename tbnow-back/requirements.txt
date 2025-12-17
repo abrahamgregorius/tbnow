@@ -9,7 +9,8 @@ pypdf
 opencv-python
 numpy
 matplotlib
+scikit-learn
 dotenv
 google-genai
-pillow 
+pillow
 opencv-python
