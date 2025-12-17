@@ -11,3 +11,5 @@ numpy
 matplotlib
 dotenv
 google-genai
+pillow 
+opencv-python
