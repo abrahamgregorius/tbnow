@@ -1,6 +1,21 @@
+import { useState, useEffect } from 'react';
 import MobileNav from '../components/MobileNav';
 
 export default function Home() {
+    const [showDisclaimer, setShowDisclaimer] = useState(false);
+
+    useEffect(() => {
+        // Check if user has dismissed disclaimer before
+        const disclaimerDismissed = localStorage.getItem('tbnow-disclaimer-dismissed');
+        if (!disclaimerDismissed) {
+            setShowDisclaimer(true);
+        }
+    }, []);
+
+    const dismissDisclaimer = () => {
+        setShowDisclaimer(false);
+        localStorage.setItem('tbnow-disclaimer-dismissed', 'true');
+    };
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white p-4 flex justify-center pb-20">
@@ -74,23 +89,18 @@ export default function Home() {
                     {/* App Description */}
                     <section className="bg-gray-800 p-6 rounded-2xl shadow-2xl border border-gray-700">
                         <h2 className="text-xl font-semibold text-blue-300 mb-4">About TBNow</h2>
-                        <p className="text-gray-300 text-sm leading-relaxed">
+                        <p className="text-gray-300 text-sm leading-relaxed mb-4">
                             TBNow is an AI-powered clinical decision-support tool designed to assist healthcare workers in screening tuberculosis (TB) more efficiently and consistently, especially in facilities with limited access to specialists.
                         </p>
+                        <button
+                            onClick={() => setShowDisclaimer(true)}
+                            className="text-red-400 hover:text-red-300 text-sm underline transition-colors"
+                        >
+                            View Important Disclaimer
+                        </button>
                     </section>
 
                     {/* Disclaimer */}
-                    <section className="bg-red-900 p-6 rounded-2xl shadow-2xl border border-red-700">
-                        <h2 className="text-xl font-semibold text-red-300 mb-4 flex items-center">
-                            <svg className="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
-                            </svg>
-                            Disclaimer
-                        </h2>
-                        <p className="text-red-200 text-sm leading-relaxed">
-                            This application is not a substitute for professional medical diagnosis or treatment. All AI recommendations should be reviewed and confirmed by qualified healthcare providers. Always prioritize patient safety and clinical judgment.
-                        </p>
-                    </section>
 
                     {/* Sources */}
                     <section className="bg-gray-800 p-6 rounded-2xl shadow-2xl border border-gray-700">
@@ -196,6 +206,38 @@ export default function Home() {
                     <p className="text-gray-400">Empowering healthcare in limited-resource settings</p>
                 </footer>
             </div>
+
+            {/* Disclaimer Modal */}
+            {showDisclaimer && (
+                <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
+                    <div className="bg-gray-800 rounded-2xl shadow-2xl border border-red-700 w-full max-w-sm mx-4">
+                        <div className="p-6">
+                            <div className="text-center">
+                                <div className="w-16 h-16 bg-red-900 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-red-700">
+                                    <svg className="w-8 h-8 text-red-300" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+                                    </svg>
+                                </div>
+                                <h3 className="text-xl font-semibold text-red-300 mb-3">Important Disclaimer</h3>
+                                <p className="text-gray-300 text-sm leading-relaxed mb-6">
+                                    This application is <strong>not a substitute</strong> for professional medical diagnosis or treatment. All AI recommendations should be reviewed and confirmed by qualified healthcare providers. Always prioritize patient safety and clinical judgment.
+                                </p>
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={dismissDisclaimer}
+                                        className="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 px-4 rounded-lg font-medium transition-colors"
+                                    >
+                                        I Understand
+                                    </button>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-3">
+                                    You can review this disclaimer anytime in the app settings.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <MobileNav />
         </div>
