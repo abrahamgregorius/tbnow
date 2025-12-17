@@ -36,13 +36,9 @@ export default function Analyze() {
             const result = await response.json();
             setXrayData(result);
             
+            // Set analysis result without the note in main text
             let analysisText = `Risiko TB: ${result.risk_level}\n`;
-            analysisText += `Tingkat Kepercayaan: ${(result.confidence * 100).toFixed(1)}%\n`;
-            analysisText += `Catatan: ${result.note}`;
-            
-            if (result.heatmap_url) {
-                analysisText += `\nHeatmap: ${result.heatmap_url}`;
-            }
+            analysisText += `Tingkat Kepercayaan: ${(result.confidence * 100).toFixed(1)}%`;
             
             setAnalysisResult(analysisText);
         } catch (error) {
@@ -135,7 +131,10 @@ export default function Analyze() {
                         </form>
                         {analysisResult && (
                             <div className="mt-4 p-4 bg-red-900 border border-red-600 rounded-xl shadow-lg">
-                                <p className="text-red-200 font-medium whitespace-pre-line mb-3">{analysisResult}</p>
+                                <p className="text-red-200 font-medium whitespace-pre-line mb-2">{analysisResult}</p>
+                                {xrayData && xrayData.note && (
+                                    <p className="text-xs text-red-300 italic">{xrayData.note}</p>
+                                )}
                                 {xrayData && xrayData.heatmap_url && (
                                     <div className="mt-3">
                                         <p className="text-sm text-red-300 mb-2">Heatmap Analisis:</p>
