@@ -135,8 +135,9 @@ async def add_chat_to_record(record_id: str, request: QueryRequest):
     if not record:
         raise HTTPException(status_code=404, detail="Record not found")
     
-    # Get AI response
-    response = rag_answer(request.question, request.query_type)
+    # Get AI response using record-specific RAG
+    from .rag.query import record_rag_answer
+    response = record_rag_answer(request.question, record, request.query_type)
     
     # Add to chat history
     chat_entry = {
