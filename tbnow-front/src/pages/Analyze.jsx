@@ -144,27 +144,96 @@ export default function Analyze() {
                             </button>
                         </form>
                         {analysisResult && (
-                            <div className="mt-4 p-4 bg-red-900 border border-red-600 rounded-xl shadow-lg">
-                                <p className="text-red-200 font-medium whitespace-pre-line mb-2">{analysisResult}</p>
-                                {xrayData && xrayData.note && (
-                                    <p className="text-xs text-red-300 italic">{xrayData.note}</p>
-                                )}
-                                {xrayData && xrayData.heatmap_url && (
-                                    <div className="mt-3">
-                                        <p className="text-sm text-red-300 mb-2">Heatmap Analisis:</p>
-                                        <img 
-                                            src={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${xrayData.heatmap_url}`} 
-                                            alt="X-ray Heatmap" 
-                                            className="w-full max-w-sm rounded border border-red-600 mx-auto block"
-                                        />
+                            <div className="mt-6 space-y-4">
+                                {/* Basic Results */}
+                                <div className="p-4 bg-red-900 border border-red-600 rounded-xl shadow-lg">
+                                    <div className="flex items-center mb-3">
+                                        <svg className="w-5 h-5 mr-2 text-red-300" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                        </svg>
+                                        <h3 className="text-lg font-semibold text-red-300">Hasil Analisis X-ray</h3>
+                                    </div>
+                                    <p className="text-red-200 font-medium whitespace-pre-line mb-2">{analysisResult}</p>
+                                    {xrayData && xrayData.note && (
+                                        <p className="text-xs text-red-300 italic">{xrayData.note}</p>
+                                    )}
+                                </div>
+
+                                {/* Detailed Analysis */}
+                                {xrayData && (
+                                    <div className="space-y-4">
+                                        {/* Observations */}
+                                        <div className="p-4 bg-blue-900 border border-blue-600 rounded-xl shadow-lg">
+                                            <div className="flex items-center mb-3">
+                                                <svg className="w-5 h-5 mr-2 text-blue-300" fill="currentColor" viewBox="0 0 24 24">
+                                                    <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                                                </svg>
+                                                <h3 className="text-lg font-semibold text-blue-300">Yang Dilihat dari X-ray</h3>
+                                            </div>
+                                            <p className="text-blue-200 text-sm leading-relaxed">{xrayData.observations}</p>
+                                        </div>
+
+                                        {/* Recommendations */}
+                                        <div className="p-4 bg-green-900 border border-green-600 rounded-xl shadow-lg">
+                                            <div className="flex items-center mb-3">
+                                                <svg className="w-5 h-5 mr-2 text-green-300" fill="currentColor" viewBox="0 0 24 24">
+                                                    <path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.1 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/>
+                                                </svg>
+                                                <h3 className="text-lg font-semibold text-green-300">Anjuran Tindakan</h3>
+                                            </div>
+                                            <p className="text-green-200 text-sm leading-relaxed">{xrayData.recommendations}</p>
+                                        </div>
+
+                                        {/* Follow-up Questions */}
+                                        <div className="p-4 bg-purple-900 border border-purple-600 rounded-xl shadow-lg">
+                                            <div className="flex items-center mb-3">
+                                                <svg className="w-5 h-5 mr-2 text-purple-300" fill="currentColor" viewBox="0 0 24 24">
+                                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-6h2v6zm0-8h-2V7h2v4z"/>
+                                                </svg>
+                                                <h3 className="text-lg font-semibold text-purple-300">Pertanyaan Lanjutan</h3>
+                                            </div>
+                                            <ul className="text-purple-200 text-sm space-y-2">
+                                                {xrayData.follow_up_questions && xrayData.follow_up_questions.map((question, index) => (
+                                                    <li key={index} className="flex items-start">
+                                                        <span className="text-purple-400 mr-2">•</span>
+                                                        <span>{question}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+
+                                        {/* Heatmap */}
+                                        {xrayData.heatmap_url && (
+                                            <div className="p-4 bg-gray-800 border border-gray-600 rounded-xl shadow-lg">
+                                                <div className="flex items-center mb-3">
+                                                    <svg className="w-5 h-5 mr-2 text-gray-300" fill="currentColor" viewBox="0 0 24 24">
+                                                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                                                    </svg>
+                                                    <h3 className="text-lg font-semibold text-gray-300">Heatmap Analisis</h3>
+                                                </div>
+                                                <img 
+                                                    src={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${xrayData.heatmap_url}`} 
+                                                    alt="X-ray Heatmap" 
+                                                    className="w-full max-w-sm rounded border border-gray-600 mx-auto block"
+                                                />
+                                                <p className="text-xs text-gray-400 mt-2 text-center">Area merah menunjukkan fokus analisis AI</p>
+                                            </div>
+                                        )}
+
+                                        {/* Save Button */}
+                                        <button
+                                            onClick={handleSaveToRecords}
+                                            className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-4 rounded-xl hover:from-blue-700 hover:to-blue-800 transition duration-300 font-semibold shadow-lg"
+                                        >
+                                            <div className="flex items-center justify-center">
+                                                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                                                    <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V7h10v2z"/>
+                                                </svg>
+                                                Simpan ke Rekam Medis
+                                            </div>
+                                        </button>
                                     </div>
                                 )}
-                                <button
-                                    onClick={handleSaveToRecords}
-                                    className="mt-4 w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300"
-                                >
-                                    Simpan ke Rekam Medis
-                                </button>
                             </div>
                         )}
                     </section>
